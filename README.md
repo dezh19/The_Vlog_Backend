@@ -78,3 +78,49 @@ Before deploying this backend:
 - Do not commit real `.env` values
 - Do not commit real admin passwords or API tokens
 - If uploads matter in production, avoid ephemeral filesystems
+
+## Deploy on Render (recommended)
+
+This backend includes a Render blueprint file: `render.yaml`.
+
+### Option A: Blueprint deploy
+
+1. In Render, choose **New +** -> **Blueprint**
+2. Select your backend repo: `dezh19/The_Vlog_Backend`
+3. Render will detect `render.yaml` and provision:
+   - a web service for Strapi
+   - a PostgreSQL database
+   - a persistent disk for uploads
+
+### Option B: Manual deploy
+
+If you create services manually, use:
+
+- Build command: `npm ci && npm run build`
+- Start command: `npm run start`
+- Environment: Node 20
+- Database: managed PostgreSQL
+
+Required env vars (Render):
+
+- `NODE_ENV=production`
+- `HOST=0.0.0.0`
+- `PORT=10000`
+- `PUBLIC_URL=https://<your-render-service>.onrender.com`
+- `DATABASE_CLIENT=postgres`
+- `DATABASE_URL=<from-render-postgres>`
+- `DATABASE_SSL=true`
+- `DATABASE_SSL_SELF=true`
+- `APP_KEYS` (comma-separated)
+- `API_TOKEN_SALT`
+- `ADMIN_JWT_SECRET`
+- `TRANSFER_TOKEN_SALT`
+- `ENCRYPTION_KEY`
+- `JWT_SECRET`
+
+After first deploy:
+
+1. Open `https://<your-render-service>.onrender.com/admin`
+2. Create your first admin user
+3. Generate a Strapi API token
+4. Add that token to frontend repo env (`STRAPI_API_TOKEN`)
