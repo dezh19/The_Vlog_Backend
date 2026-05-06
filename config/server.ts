@@ -2,9 +2,14 @@ export default ({ env }) => {
   // Construct PUBLIC_URL with fallback for Render builds
   let publicUrl = env("PUBLIC_URL", "");
   
-  // If no PUBLIC_URL set but running on Render, use placeholder during build
-  if (!publicUrl && env("RENDER")) {
-    publicUrl = "http://localhost:1337";
+  // During Render build/deploy, construct URL from RENDER_EXTERNAL_HOSTNAME
+  if (!publicUrl) {
+    if (env("RENDER_EXTERNAL_HOSTNAME")) {
+      publicUrl = `https://${env("RENDER_EXTERNAL_HOSTNAME")}`;
+    } else {
+      // Fallback for local build environment
+      publicUrl = "http://localhost:1337";
+    }
   }
   
   return {
