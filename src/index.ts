@@ -1,6 +1,96 @@
 import type { Core } from "@strapi/strapi";
 
+let rebuildTimer: NodeJS.Timeout | null = null;
+
+function shouldSkipModel(model?: string): boolean {
+  if (!model) return true;
+  return (
+    model.startsWith("admin::") ||
+    model.startsWith("plugin::") ||
+    model.startsWith("strapi::") ||
+    model.startsWith("api::users-permissions")
+  );
+}
+
+async function dispatchFrontendRebuild(strapi: Core.Strapi, reason: string) {
+  const owner = process.env.GITHUB_REPO_OWNER;
+  const repo = process.env.GITHUB_REPO_NAME;
+  const eventType = process.env.GITHUB_ACTIONS_EVENT_TYPE || "strapi-content-updated";
+  const token = process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;
+  const branch = process.env.GITHUB_REPO_BRANCH || "main";
+
+  if (!owner || !repo || !token) {
+    strapi.log.debug(
+      "[github-dispatch] Skipped (missing GITHUB_REPO_OWNER, GITHUB_REPO_NAME, or GITHUB_ACTIONS_DISPATCH_TOKEN)."
+    );
+    return;
+  }
+
+  const endpoint = `https://api.github.com/repos/${owner}/${repo}/dispatches`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "the-vlog-backend-dispatch",
+    },
+    body: JSON.stringify({
+      event_type: eventType,
+      client_payload: {
+        source: "strapi",
+        reason,
+        branch,
+        timestamp: new Date().toISOString(),
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`GitHub dispatch failed (${response.status}): ${text || response.statusText}`);
+  }
+
+  strapi.log.info(`[github-dispatch] Triggered frontend rebuild (${eventType})`);
+}
+
+function scheduleFrontendRebuild(strapi: Core.Strapi, reason: string) {
+  const debounceMs = Number(process.env.GITHUB_REBUILD_DEBOUNCE_MS || "15000");
+
+  if (rebuildTimer) {
+    clearTimeout(rebuildTimer);
+  }
+
+  rebuildTimer = setTimeout(async () => {
+    rebuildTimer = null;
+    try {
+      await dispatchFrontendRebuild(strapi, reason);
+    } catch (error) {
+      strapi.log.error("[github-dispatch] Failed to trigger frontend rebuild", error);
+    }
+  }, debounceMs);
+}
+
 export default {
   register(/*{ strapi }: { strapi: Core.Strapi }*/) {},
-  bootstrap(/*{ strapi }: { strapi: Core.Strapi }*/) {},
+  bootstrap({ strapi }: { strapi: Core.Strapi }) {
+    strapi.db.lifecycles.subscribe({
+      afterCreate(event) {
+        if (shouldSkipModel(event.model?.uid)) return;
+        scheduleFrontendRebuild(strapi, `afterCreate:${event.model?.uid || "unknown"}`);
+      },
+      afterUpdate(event) {
+        if (shouldSkipModel(event.model?.uid)) return;
+        scheduleFrontendRebuild(strapi, `afterUpdate:${event.model?.uid || "unknown"}`);
+      },
+      afterDelete(event) {
+        if (shouldSkipModel(event.model?.uid)) return;
+        scheduleFrontendRebuild(strapi, `afterDelete:${event.model?.uid || "unknown"}`);
+      },
+    });
+
+    strapi.log.info("[github-dispatch] CMS change hooks registered");
+  },
 };

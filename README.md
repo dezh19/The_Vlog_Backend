@@ -118,6 +118,17 @@ Required env vars (Render):
 - `ENCRYPTION_KEY`
 - `JWT_SECRET`
 
+Optional for auto-redeploying frontend on CMS changes:
+
+- `GITHUB_REPO_OWNER=dezh19`
+- `GITHUB_REPO_NAME=The_Vlog`
+- `GITHUB_REPO_BRANCH=main`
+- `GITHUB_ACTIONS_EVENT_TYPE=strapi-content-updated`
+- `GITHUB_REBUILD_DEBOUNCE_MS=15000`
+- `GITHUB_ACTIONS_DISPATCH_TOKEN=<github-token>`
+
+`GITHUB_ACTIONS_DISPATCH_TOKEN` should be a GitHub token that can call repository dispatch on the frontend repo (fine-grained token with **Actions: Read/Write** and **Contents: Read** on `dezh19/The_Vlog` is sufficient).
+
 After first deploy:
 
 1. Open `https://<your-render-service>.onrender.com/admin`
