@@ -23,6 +23,15 @@ console.log(
   "| NODE_ENV=" + (process.env.NODE_ENV ?? "unset")
 );
 
+if (process.env.DATABASE_URL) {
+  try {
+    const dbUrl = new URL(process.env.DATABASE_URL);
+    console.log(`[startup] DB target — host: ${dbUrl.hostname} port: ${dbUrl.port || "5432"} db: ${dbUrl.pathname.slice(1)}`);
+  } catch {
+    console.log("[startup] DATABASE_URL is set but is not a valid URL");
+  }
+}
+
 let rebuildTimer: NodeJS.Timeout | null = null;
 
 function shouldSkipModel(model?: string): boolean {
