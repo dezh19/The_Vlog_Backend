@@ -1,5 +1,26 @@
 import type { Core } from "@strapi/strapi";
 
+// Log inner errors inside AggregateError — makes Render startup failures readable
+process.on("uncaughtException", (err: Error) => {
+  if (err instanceof AggregateError) {
+    console.error("[startup] AggregateError – inner errors:");
+    err.errors.forEach((e: NodeJS.ErrnoException) => {
+      console.error(`  [${e.constructor?.name ?? "Error"}] ${e.message}${e.code ? ` (code=${e.code})` : ""}`);
+    });
+  }
+  // Let Strapi's own shutdown handler take over after logging
+});
+
+// Env-var readiness snapshot — runs at module load, before DB connection attempt
+console.log(
+  "[startup] env check —",
+  "DATABASE_CLIENT=" + (process.env.DATABASE_CLIENT ?? "unset"),
+  "| DATABASE_URL=" + (process.env.DATABASE_URL ? "[SET]" : "[MISSING]"),
+  "| APP_KEYS=" + (process.env.APP_KEYS ? "[SET]" : "[MISSING]"),
+  "| ADMIN_JWT_SECRET=" + (process.env.ADMIN_JWT_SECRET ? "[SET]" : "[MISSING]"),
+  "| NODE_ENV=" + (process.env.NODE_ENV ?? "unset")
+);
+
 let rebuildTimer: NodeJS.Timeout | null = null;
 
 function shouldSkipModel(model?: string): boolean {
