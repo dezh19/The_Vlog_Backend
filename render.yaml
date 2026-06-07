@@ -5,8 +5,8 @@ services:
     plan: starter
     region: oregon
     rootDir: .
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    buildCommand: npm ci && mkdir -p public/uploads && npm run build
+    startCommand: mkdir -p public/uploads && npm run start
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
