@@ -1,7 +1,7 @@
 import path from "path";
 
 export default ({ env }) => {
-  const client = env("DATABASE_CLIENT", env("DATABASE_URL") ? "postgres" : "sqlite");
+  const client = env("DATABASE_CLIENT", env("DATABASE_URL", "") ? "postgres" : "sqlite");
   const configuredFilename = env("DATABASE_FILENAME", ".tmp/data.db");
   const appRoot = __dirname.includes(`${path.sep}dist${path.sep}config`)
     ? path.resolve(__dirname, "..", "..")
@@ -16,6 +16,22 @@ export default ({ env }) => {
       }
     : false;
 
+  const rawDbUrl = env("DATABASE_URL", "");
+  if (client === "postgres" && rawDbUrl) {
+    try {
+      const parsed = new URL(rawDbUrl);
+      if (!parsed.hostname) {
+        throw new Error(
+          `[database] DATABASE_URL has no hostname ("${rawDbUrl.slice(0, 40)}..."). ` +
+          "Set the correct Internal Connection String from the Render PostgreSQL dashboard."
+        );
+      }
+    } catch (err) {
+      if ((err as Error).message.startsWith("[database]")) throw err;
+      throw new Error(`[database] DATABASE_URL is not a valid URL: ${(err as Error).message}`);
+    }
+  }
+
   const connections = {
     sqlite: {
       connection: {
@@ -24,9 +40,9 @@ export default ({ env }) => {
       useNullAsDefault: true,
     },
     postgres: {
-      connection: env("DATABASE_URL")
+      connection: rawDbUrl
         ? {
-            connectionString: env("DATABASE_URL"),
+            connectionString: rawDbUrl,
             ssl: sslConfig,
           }
         : {
