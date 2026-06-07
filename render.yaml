@@ -2,8 +2,7 @@ services:
   - type: web
     name: the-vlog-backend
     env: node
-    plan: starter
-    region: oregon
+    plan: free
     rootDir: .
     buildCommand: npm ci && mkdir -p public/uploads && npm run build
     startCommand: mkdir -p public/uploads && npm run start
@@ -48,6 +47,4 @@ services:
       mountPath: /opt/render/project/src/public/uploads
       sizeGB: 1
 
-databases:
-  - name: the-vlog-postgres
-    plan: starter
+# No managed Render PostgreSQL — using external Neon database via DATABASE_URL
