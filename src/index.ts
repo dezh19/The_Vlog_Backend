@@ -2,10 +2,12 @@ import type { Core } from "@strapi/strapi";
 
 // Log inner errors inside AggregateError — makes Render startup failures readable
 process.on("uncaughtException", (err: Error) => {
-  if (err instanceof AggregateError) {
+  const inner = (err as Error & { errors?: unknown[] }).errors;
+  if (Array.isArray(inner) && inner.length > 0) {
     console.error("[startup] AggregateError – inner errors:");
-    err.errors.forEach((e: NodeJS.ErrnoException) => {
-      console.error(`  [${e.constructor?.name ?? "Error"}] ${e.message}${e.code ? ` (code=${e.code})` : ""}`);
+    inner.forEach((e) => {
+      const error = e as NodeJS.ErrnoException;
+      console.error(`  [${error.constructor?.name ?? "Error"}] ${error.message ?? String(e)}${error.code ? ` (code=${error.code})` : ""}`);
     });
   }
   // Let Strapi's own shutdown handler take over after logging
