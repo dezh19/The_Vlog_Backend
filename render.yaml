@@ -17,8 +17,6 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 10000
-      - key: PUBLIC_URL
-        sync: false
       - key: IS_PROXIED
         value: true
       - key: APP_KEYS
@@ -43,6 +41,10 @@ services:
         value: true
       - key: DATABASE_SSL_SELF
         value: true
+      - key: NETLIFY_BUILD_HOOK_URL
+        sync: false
+      - key: REBUILD_DEBOUNCE_MS
+        value: 15000
     disk:
       name: uploads
       mountPath: /opt/render/project/src/public/uploads

@@ -12,7 +12,25 @@ function shouldSkipModel(model?: string): boolean {
   );
 }
 
-async function dispatchFrontendRebuild(strapi: Core.Strapi, reason: string) {
+async function dispatchNetlifyRebuild(strapi: Core.Strapi) {
+  const hookUrl = process.env.NETLIFY_BUILD_HOOK_URL;
+
+  if (!hookUrl) {
+    strapi.log.debug("[netlify-dispatch] Skipped (NETLIFY_BUILD_HOOK_URL not set).");
+    return;
+  }
+
+  const response = await fetch(hookUrl, { method: "POST" });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Netlify build hook failed (${response.status}): ${text || response.statusText}`);
+  }
+
+  strapi.log.info("[netlify-dispatch] Triggered Netlify frontend rebuild.");
+}
+
+async function dispatchGitHubRebuild(strapi: Core.Strapi, reason: string) {
   const owner = process.env.GITHUB_REPO_OWNER;
   const repo = process.env.GITHUB_REPO_NAME;
   const eventType = process.env.GITHUB_ACTIONS_EVENT_TYPE || "strapi-content-updated";
@@ -53,11 +71,22 @@ async function dispatchFrontendRebuild(strapi: Core.Strapi, reason: string) {
     throw new Error(`GitHub dispatch failed (${response.status}): ${text || response.statusText}`);
   }
 
-  strapi.log.info(`[github-dispatch] Triggered frontend rebuild (${eventType})`);
+  strapi.log.info(`[github-dispatch] Triggered GitHub Actions rebuild (${eventType}).`);
+}
+
+async function dispatchFrontendRebuild(strapi: Core.Strapi, reason: string) {
+  await Promise.allSettled([
+    dispatchNetlifyRebuild(strapi).catch((err) =>
+      strapi.log.error("[netlify-dispatch] Failed to trigger rebuild", err)
+    ),
+    dispatchGitHubRebuild(strapi, reason).catch((err) =>
+      strapi.log.error("[github-dispatch] Failed to trigger rebuild", err)
+    ),
+  ]);
 }
 
 function scheduleFrontendRebuild(strapi: Core.Strapi, reason: string) {
-  const debounceMs = Number(process.env.GITHUB_REBUILD_DEBOUNCE_MS || "15000");
+  const debounceMs = Number(process.env.REBUILD_DEBOUNCE_MS || process.env.GITHUB_REBUILD_DEBOUNCE_MS || "15000");
 
   if (rebuildTimer) {
     clearTimeout(rebuildTimer);
@@ -65,11 +94,7 @@ function scheduleFrontendRebuild(strapi: Core.Strapi, reason: string) {
 
   rebuildTimer = setTimeout(async () => {
     rebuildTimer = null;
-    try {
-      await dispatchFrontendRebuild(strapi, reason);
-    } catch (error) {
-      strapi.log.error("[github-dispatch] Failed to trigger frontend rebuild", error);
-    }
+    await dispatchFrontendRebuild(strapi, reason);
   }, debounceMs);
 }
 
