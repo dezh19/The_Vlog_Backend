@@ -1,3 +1,9 @@
+const defaultOrigins = ["http://localhost:3000", "http://localhost:3001"];
+const extraOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 export default [
   "strapi::logger",
   "strapi::errors",
@@ -5,7 +11,7 @@ export default [
   {
     name: "strapi::cors",
     config: {
-      origin: ["http://localhost:3000", "http://localhost:3001"],
+      origin: [...defaultOrigins, ...extraOrigins],
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
       headers: ["Content-Type", "Authorization", "Origin", "Accept"],
       keepHeaderOnError: true,

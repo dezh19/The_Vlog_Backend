@@ -4,8 +4,8 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm ci && mkdir -p public/uploads && npm run build
-    startCommand: mkdir -p public/uploads && npm run start
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
@@ -38,13 +38,18 @@ services:
         value: true
       - key: DATABASE_SSL_SELF
         value: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CLOUDINARY_NAME
+        sync: false
+      - key: CLOUDINARY_KEY
+        sync: false
+      - key: CLOUDINARY_SECRET
+        sync: false
       - key: NETLIFY_BUILD_HOOK_URL
         sync: false
       - key: REBUILD_DEBOUNCE_MS
         value: 15000
-    disk:
-      name: uploads
-      mountPath: /opt/render/project/src/public/uploads
-      sizeGB: 1
 
 # No managed Render PostgreSQL — using external Neon database via DATABASE_URL
+# No persistent disk on the free plan — media uploads go through Cloudinary (see config/plugins.ts)
