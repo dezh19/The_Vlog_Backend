@@ -7,7 +7,6 @@ This repository contains the **Strapi CMS backend** for The Vlog.
 - Strapi 5 backend
 - Content types for hero, about, booking, footer, testimonies, events, and content features
 - Media uploads and CMS administration
-- Helper scripts for admin/token setup
 
 ## Related repository
 
@@ -42,20 +41,11 @@ Use `backend/.env.example` as your template.
 Important values:
 
 - `DATABASE_FILENAME` - SQLite file path
-- `STRAPI_ADMIN_EMAIL` and `STRAPI_ADMIN_PASSWORD` - optional values used by `create-admin.js`
 - `GITHUB_ACTIONS_DISPATCH_TOKEN` - optional token for triggering frontend rebuilds after CMS updates
 
 ## Creating the first admin user
 
-Preferred option:
-
-- Start Strapi and create the first admin through `http://localhost:1337/admin`
-
-Optional script-based option:
-
-1. Set `STRAPI_ADMIN_EMAIL` and `STRAPI_ADMIN_PASSWORD`
-2. Run:
-   - `node create-admin.js`
+Start Strapi and create the first admin through `http://localhost:1337/admin`.
 
 ## Deployment checklist
 
